@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ブログ・note用 アイキャッチ画像一発生成ツール</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 16px;
+    }
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    header p {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 84px;
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .theme-btn {
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 4px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: #fff;
+      transition: all 0.15s;
+    }
+    .theme-btn.active {
+      border-color: var(--primary);
+      background: #eff6ff;
+      color: var(--primary);
+    }
+    .preview-area {
+      text-align: center;
+    }
+    .canvas-wrap {
+      background: #e2e8f0;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    canvas {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .btn-download {
+      width: 100%;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-download:hover {
+      background: var(--primary-hover);
+    }
+    .meta-info {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>ブログ・note用 アイキャッチ画像一発生成ツール</h1>
+      <p>デザイン不要・ブラウザ完結でプロ仕様の文字入りサムネイルを即PNG保存</p>
+    </header>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="form-group">
+          <label>画像サイズ（用途別プリセット）</label>
+          <select id="sizePreset">
+            <option value="1280x670">note推奨サイズ (1280 × 670 px)</option>
+            <option value="1200x630">ブログ・OGP標準 (1200 × 630 px)</option>
+            <option value="1080x1080">SNS正方形サイズ (1080 × 1080 px)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>デザインテーマ</label>
+          <div class="theme-grid" id="themeGrid">
+            <button type="button" class="theme-btn active" data-theme="techDark">テック濃紺</button>
+            <button type="button" class="theme-btn" data-theme="cleanWhite">クリーン白</button>
+            <button type="button" class="theme-btn" data-theme="impactYellow">注目イエロー</button>
+            <button type="button" class="theme-btn" data-theme="sunset">サンセット</button>
+            <button type="button" class="theme-btn" data-theme="forest">フォレスト</button>
+            <button type="button" class="theme-btn" data-theme="mono">モノクロ枠</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>上部ラベル（バッジ文字）</label>
+          <input type="text" id="badgeText" value="無料Webツール公開" placeholder="例：保存版 / 無料ツール / 検証ログ">
+        </div>
+
+        <div class="form-group">
+          <label>メインタイトル（改行もそのまま反映）</label>
+          <textarea id="mainTitle">デザイン技術ゼロで
+ブログ・noteのアイキャッチ画像を
+10秒で量産するツール</textarea>
+        </div>
+
+        <div class="form-group">
+          <label>文字サイズ調整：<span id="fontSizeVal">64</span>px</label>
+          <input type="range" id="fontSize" min="36" max="96" value="64">
+        </div>
+
+        <div class="form-group">
+          <label>右下クレジット・署名（任意）</label>
+          <input type="text" id="authorText" value="@poikatsu_navi01" placeholder="例：ブログ名やSNS ID">
+        </div>
+      </div>
+
+      <div class="panel preview-area">
+        <div class="canvas-wrap">
+          <canvas id="canvas" width="1280" height="670"></canvas>
+        </div>
+        <button type="button" class="btn-download" id="downloadBtn">PNG画像としてダウンロード</button>
+        <p class="meta-info">※画像はブラウザ内で生成されるため、入力データが外部サーバーに送信されることはありません。</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const sizePreset = document.getElementById('sizePreset');
+    const badgeText = document.getElementById('badgeText');
+    const mainTitle = document.getElementById('mainTitle');
+    const fontSize = document.getElementById('fontSize');
+    const fontSizeVal = document.getElementById('fontSizeVal');
+    const authorText = document.getElementById('authorText');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const themeBtns = document.querySelectorAll('.theme-btn');
+
+    let currentTheme = 'techDark';
+
+    const themes = {
+      techDark: {
+        bgType: 'gradient',
+        colors: ['#0f172a', '#1e3a8a'],
+        cardBg: 'rgba(255, 255, 255, 0.06)',
+        borderColor: '#38bdf8',
+        badgeBg: '#38bdf8',
+        badgeText: '#0f172a',
+        titleColor: '#ffffff',
+        authorColor: '#94a3b8'
+      },
+      cleanWhite: {
+        bgType: 'solid',
+        colors: ['#f1f5f9'],
+        cardBg: '#ffffff',
+        borderColor: '#2563eb',
+        badgeBg: '#2563eb',
+        badgeText: '#ffffff',
+        titleColor: '#0f172a',
+        authorColor: '#64748b'
+      },
+      impactYellow: {
+        bgType: 'solid',
+        colors: ['#18181b'],
+        cardBg: '#27272a',
+        borderColor: '#facc15',
+        badgeBg: '#facc15',
+        badgeText: '#18181b',
+        titleColor: '#ffffff',
+        authorColor: '#a1a1aa'
+      },
+      sunset: {
+        bgType: 'gradient',
+        colors: ['#be123c', '#f97316'],
+        cardBg: 'rgba(0, 0, 0, 0.22)',
+        borderColor: '#fde047',
+        badgeBg: '#ffffff',
+        badgeText: '#be123c',
+        titleColor: '#ffffff',
+        authorColor: '#ffedd5'
+      },
+      forest: {
+        bgType: 'gradient',
+        colors: ['#064e3b', '#047857'],
+        cardBg: 'rgba(255, 255, 255, 0.08)',
+        borderColor: '#6ee7b7',
+        badgeBg: '#6ee7b7',
+        badgeText: '#064e3b',
+        titleColor: '#ffffff',
+        authorColor: '#a7f3d0'
+      },
+      mono: {
+        bgType: 'solid',
+        colors: ['#ffffff'],
+        cardBg: '#fafafa',
+        borderColor: '#171717',
+        badgeBg: '#171717',
+        badgeText: '#ffffff',
+        titleColor: '#171717',
+        authorColor: '#525252'
+      }
+    };
+
+    function wrapLines(context, text, maxWidth) {
+      const rawLines = text.split('\n');
+      const wrapped = [];
+      rawLines.forEach(raw => {
+        if (!raw) {
+          wrapped.push('');
+          return;
+        }
+        let line = '';
+        for (let i = 0; i < raw.length; i++) {
+          const testLine = line + raw[i];
+          if (context.measureText(testLine).width > maxWidth && line !== '') {
+            wrapped.push(line);
+            line = raw[i];
+          } else {
+            line = testLine;
+          }
+        }
+        wrapped.push(line);
+      });
+      return wrapped;
+    }
+
+    function draw() {
+      const [w, h] = sizePreset.value.split('x').map(Number);
+      canvas.width = w;
+      canvas.height = h;
+
+      const t = themes[currentTheme];
+      const pad = Math.round(w * 0.045);
+
+      // 背景描画
+      if (t.bgType === 'gradient') {
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, t.colors[0]);
+        grad.addColorStop(1, t.colors[1]);
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = t.colors[0];
+      }
+      ctx.fillRect(0, 0, w, h);
+
+      // 内側フレームカード
+      ctx.fillStyle = t.cardBg;
+      ctx.strokeStyle = t.borderColor;
+      ctx.lineWidth = Math.max(4, Math.round(w * 0.006));
+      ctx.beginPath();
+      ctx.roundRect(pad, pad, w - pad * 2, h - pad * 2, 24);
+      ctx.fill();
+      ctx.stroke();
+
+      // バッジ描画
+      const badge = badgeText.value.trim();
+      const fSize = Number(fontSize.value);
+      const maxTextWidth = w - pad * 4;
+
+      ctx.font = `800 ${fSize}px "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif`;
+      const lines = wrapLines(ctx, mainTitle.value, maxTextWidth);
+      const lineHeight = fSize * 1.38;
+      const totalTextHeight = lines.length * lineHeight;
+
+      const badgeOffset = badge ? 54 : 0;
+      let startY = (h - totalTextHeight + badgeOffset) / 2 + fSize * 0.35;
+
+      if (badge) {
+        const bFontSize = Math.max(22, Math.round(fSize * 0.42));
+        ctx.font = `700 ${bFontSize}px "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif`;
+        const bMetrics = ctx.measureText(badge);
+        const bw = bMetrics.width + 44;
+        const bh = bFontSize + 24;
+        const bx = (w - bw) / 2;
+        const by = startY - fSize - bh - 18;
+
+        ctx.fillStyle = t.badgeBg;
+        ctx.beginPath();
+        ctx.roundRect(bx, by, bw, bh, bh / 2);
+        ctx.fill();
+
+        ctx.fillStyle = t.badgeText;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(badge, w / 2, by + bh / 2 + 1);
+      }
+
+      // メインタイトル描画
+      ctx.font = `800 ${fSize}px "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif`;
+      ctx.fillStyle = t.titleColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+
+      lines.forEach((line, idx) => {
+        ctx.fillText(line, w / 2, startY + idx * lineHeight);
+      });
+
+      // 右下署名描画
+      const author = authorText.value.trim();
+      if (author) {
+        const aSize = Math.max(20, Math.round(w * 0.02));
+        ctx.font = `600 ${aSize}px "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif`;
+        ctx.fillStyle = t.authorColor;
+        ctx.textAlign = 'right';
+        ctx.fillText(author, w - pad * 1.6, h - pad * 1.45);
+      }
+    }
+
+    themeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        themeBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTheme = btn.dataset.theme;
+        draw();
+      });
+    });
+
+    [sizePreset, badgeText, mainTitle, authorText].forEach(el => {
+      el.addEventListener('input', draw);
+    });
+
+    fontSize.addEventListener('input', () => {
+      fontSizeVal.textContent = fontSize.value;
+      draw();
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = `eyecatch_${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+
+    draw();
+  </script>
+</body>
+</html>
