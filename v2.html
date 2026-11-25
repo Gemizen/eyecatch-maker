@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>アイキャッチ画像生成機 Ver.2.0</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-2: #0b1220;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #22c55e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.92);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-ver {
+      background: linear-gradient(135deg, #38bdf8, #22c55e);
+      color: #06121e;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .sub-note {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .workspace {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 0 0 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 76px;
+    }
+
+    input[type="color"] {
+      width: 100%;
+      height: 34px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--panel-2);
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .row-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .field {
+      margin-bottom: 10px;
+    }
+
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    .pill-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .pill-btn {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .pill-btn:hover {
+      border-color: var(--accent);
+    }
+
+    .pill-btn.active {
+      background: rgba(56, 189, 248, 0.16);
+      border-color: var(--accent);
+      color: #7dd3fc;
+    }
+
+    .layer-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .layer-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .layer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+
+    .layer-tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #1e293b;
+      color: var(--muted);
+    }
+
+    .toggle-mini {
+      background: #1e293b;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .toggle-mini.off {
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+
+    .preview-panel {
+      position: sticky;
+      top: 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .preview-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .preview-meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #38bdf8, #22c55e);
+      color: #05111d;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.1s ease, opacity 0.15s ease;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.94;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.99);
+    }
+
+    .btn-secondary {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+    }
+
+    .canvas-box {
+      width: 100%;
+      background: repeating-conic-gradient(#1e293b 0% 25%, #0f172a 0% 50%) 50% / 20px 20px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    canvas {
+      max-width: 100%;
+      max-height: 70vh;
+      width: auto;
+      height: auto;
+      display: block;
+      border-radius: 6px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+      cursor: grab;
+      touch-action: none;
+    }
+
+    canvas:active {
+      cursor: grabbing;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title-wrap">
+      <span class="badge-ver">Ver.2.0</span>
+      <h1>アイキャッチ画像生成機</h1>
+    </div>
+    <div class="sub-note">3層レイヤー・文字デザイン6種・上部バッジ3位置・ブラウザ完結PNG出力</div>
+  </header>
+
+  <main class="workspace">
+    <section class="controls">
+      <!-- 1. サイズ＆背景テーマ -->
+      <div class="card">
+        <div class="card-title">
+          <span>1. サイズ＆背面テーマ</span>
+          <button type="button" class="btn-secondary" id="btnReset">初期化</button>
+        </div>
+
+        <div class="field">
+          <label for="sizePreset">出力サイズプリセット</label>
+          <select id="sizePreset">
+            <option value="1280x670">note推奨サイズ（1280 × 670 px）</option>
+            <option value="1200x630">ブログ・OGP標準（1200 × 630 px）</option>
+            <option value="1080x1080">SNS正方形・YouTubeアイコン（1080 × 1080 px）</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>背面テーマプリセット</label>
+          <div class="pill-group" id="themeButtons"></div>
+        </div>
+
+        <div class="row-2 field">
+          <div>
+            <label for="bgColor1">背景カラー1</label>
+            <input type="color" id="bgColor1" value="#0f172a" />
+          </div>
+          <div>
+            <label for="bgColor2">背景カラー2（グラデ）</label>
+            <input type="color" id="bgColor2" value="#1e3a8a" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="bgGradientMode">背景グラデーション</label>
+          <select id="bgGradientMode">
+            <option value="diagonal">斜めグラデーション</option>
+            <option value="vertical">縦グラデーション</option>
+            <option value="solid">単色（カラー1のみ）</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 2. 3層レイヤー管理 -->
+      <div class="card">
+        <div class="card-title"><span>2. 3層レイヤー構成</span></div>
+        <div id="layerStack">
+          <div class="layer-item">
+            <div class="layer-left">
+              <span class="layer-tag">前面</span>
+              <span>文字・上部バッジ</span>
+            </div>
+            <button type="button" class="toggle-mini" data-layer="text">表示中</button>
+          </div>
+          <div class="layer-item">
+            <div class="layer-left">
+              <span class="layer-tag">中面</span>
+              <span>手持ち画像・アイコン</span>
+            </div>
+            <button type="button" class="toggle-mini" data-layer="image">表示中</button>
+          </div>
+          <div class="layer-item">
+            <div class="layer-left">
+              <span class="layer-tag">背面</span>
+              <span>背景テーマ・カラー</span>
+            </div>
+            <button type="button" class="toggle-mini" data-layer="bg">表示中</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. 中面レイヤー（手持ち画像・アイコン） -->
+      <div class="card">
+        <div class="card-title">
+          <span>3. 手持ち画像・アイコン（中面）</span>
+          <button type="button" class="btn-secondary" id="btnClearImage">画像削除</button>
+        </div>
+
+        <div class="field">
+          <label for="imageUpload">画像をアップロード（PNG / JPG / WebP）</label>
+          <input type="file" id="imageUpload" accept="image/*" />
+        </div>
+
+        <div class="row-2 field">
+          <div>
+            <label for="imgShape">画像マスク形状</label>
+            <select id="imgShape">
+              <option value="none">そのまま（枠なし）</option>
+              <option value="rounded">角丸</option>
+              <option value="circle">円形（アイコン向け）</option>
+            </select>
+          </div>
+          <div>
+            <label for="imgScale">拡大・縮小：<span id="imgScaleVal">100%</span></label>
+            <input type="range" id="imgScale" min="20" max="220" value="100" />
+          </div>
+        </div>
+
+        <div class="row-2 field">
+          <div>
+            <label for="imgX">横位置（X）：<span id="imgXVal">0</span>px</label>
+            <input type="range" id="imgX" min="-500" max="500" value="0" />
+          </div>
+          <div>
+            <label for="imgY">縦位置（Y）：<span id="imgYVal">0</span>px</label>
+            <input type="range" id="imgY" min="-500" max="500" value="0" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. 文字デザイン（6種）＆上部バッジ位置（3種） -->
+      <div class="card">
+        <div class="card-title"><span>4. 文字デザイン（6種）＆バッジ位置（3種）</span></div>
+
+        <div class="field">
+          <label>文字デザインセット（6種類）</label>
+          <div class="pill-group" id="textStyleButtons"></div>
+        </div>
+
+        <div class="field">
+          <label>上部バッジ位置（3箇所）</label>
+          <div class="pill-group" id="badgePosButtons"></div>
+        </div>
+
+        <div class="row-2 field">
+          <div>
+            <label for="badgeText">上部バッジテキスト</label>
+            <input type="text" id="badgeText" value="Ver.2.0 拡張版" />
+          </div>
+          <div>
+            <label for="accentColor">アクセントカラー</label>
+            <input type="color" id="accentColor" value="#38bdf8" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="mainTitle">メインタイトル（改行反映）</label>
+          <textarea id="mainTitle">レイヤー重ね＆6種デザインで
+アイキャッチを自在に作る</textarea>
+        </div>
+
+        <div class="row-2 field">
+          <div>
+            <label for="fontSize">文字サイズ：<span id="fontSizeVal">64</span>px</label>
+            <input type="range" id="fontSize" min="24" max="120" value="64" />
+          </div>
+          <div>
+            <label for="subText">サブ / クレジット（下部）</label>
+            <input type="text" id="subText" value="Eyecatch Maker Ver.2.0" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="preview-panel">
+      <div class="preview-top">
+        <div class="preview-meta" id="canvasInfo">1280 × 670 px｜ドラッグで手持ち画像を移動できます</div>
+        <button type="button" class="btn-primary" id="btnDownload">PNG画像をダウンロード</button>
+      </div>
+      <div class="canvas-box">
+        <canvas id="previewCanvas" width="1280" height="670"></canvas>
+      </div>
+      <div class="hint">
+        ※ すべてお使いのブラウザ内で描画・生成されます。入力や画像が外部サーバーへ送信されることはありません。
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const THEMES = [
+      { id: "tech", name: "テック濃紺", bg1: "#0f172a", bg2: "#1d4ed8", accent: "#38bdf8", text: "#ffffff", sub: "#cbd5e1" },
+      { id: "clean", name: "クリーン白", bg1: "#f8fafc", bg2: "#e2e8f0", accent: "#0284c7", text: "#0f172a", sub: "#475569" },
+      { id: "alert", name: "注目イエロー", bg1: "#fef08a", bg2: "#f59e0b", accent: "#dc2626", text: "#111827", sub: "#374151" },
+      { id: "sunset", name: "サンセット", bg1: "#be185d", bg2: "#f97316", accent: "#fde047", text: "#ffffff", sub: "#ffedd5" },
+      { id: "forest", name: "フォレスト", bg1: "#064e3b", bg2: "#0d9488", accent: "#6ee7b7", text: "#ffffff", sub: "#ccfbf1" },
+      { id: "mono", name: "モノクロ枠", bg1: "#18181b", bg2: "#27272a", accent: "#f4f4f5", text: "#ffffff", sub: "#a1a1aa" }
+    ];
+
+    const TEXT_STYLES = [
+      { id: "outline", name: "① くっきり縁取り" },
+      { id: "impact", name: "② 極太インパクト" },
+      { id: "modern", name: "③ クリーン・モダン" },
+      { id: "highlight", name: "④ ハイライト帯" },
+      { id: "pop", name: "⑤ ポップ・カジュアル" },
+      { id: "minimal", name: "⑥ ミニマル" }
+    ];
+
+    const BADGE_POSITIONS = [
+      { id: "top-left", name: "上部・左寄せ" },
+      { id: "top-center", name: "上部・中央" },
+      { id: "top-right", name: "上部・右寄せ" }
+    ];
+
+    const state = {
+      width: 1280,
+      height: 670,
+      themeId: "tech",
+      bgColor1: "#0f172a",
+      bgColor2: "#1d4ed8",
+      bgGradientMode: "diagonal",
+      accentColor: "#38bdf8",
+      textColor: "#ffffff",
+      subColor: "#cbd5e1",
+      textStyleId: "outline",
+      badgePos: "top-left",
+      badgeText: "Ver.2.0 拡張版",
+      mainTitle: "レイヤー重ね＆6種デザインで\nアイキャッチを自在に作る",
+      fontSize: 64,
+      subText: "Eyecatch Maker Ver.2.0",
+      imgShape: "none",
+      imgScale: 100,
+      imgX: 0,
+      imgY: 0,
+      layers: {
+        bg: true,
+        image: true,
+        text: true
+      }
+    };
+
+    let uploadedImg = null;
+    let isDraggingImg = false;
+    let dragStart = { x: 0, y: 0, origX: 0, origY: 0 };
+
+    const canvas = document.getElementById("previewCanvas");
+    const ctx = canvas.getContext("2d");
+
+    function initButtons() {
+      const themeWrap = document.getElementById("themeButtons");
+      THEMES.forEach((t) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "pill-btn" + (t.id === state.themeId ? " active" : "");
+        btn.textContent = t.name;
+        btn.addEventListener("click", () => {
+          state.themeId = t.id;
+          state.bgColor1 = t.bg1;
+          state.bgColor2 = t.bg2;
+          state.accentColor = t.accent;
+          state.textColor = t.text;
+          state.subColor = t.sub;
+          syncInputs();
+          render();
+        });
+        themeWrap.appendChild(btn);
+      });
+
+      const styleWrap = document.getElementById("textStyleButtons");
+      TEXT_STYLES.forEach((s) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "pill-btn" + (s.id === state.textStyleId ? " active" : "");
+        btn.textContent = s.name;
+        btn.addEventListener("click", () => {
+          state.textStyleId = s.id;
+          syncInputs();
+          render();
+        });
+        styleWrap.appendChild(btn);
+      });
+
+      const badgeWrap = document.getElementById("badgePosButtons");
+      BADGE_POSITIONS.forEach((p) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "pill-btn" + (p.id === state.badgePos ? " active" : "");
+        btn.textContent = p.name;
+        btn.addEventListener("click", () => {
+          state.badgePos = p.id;
+          syncInputs();
+          render();
+        });
+        badgeWrap.appendChild(btn);
+      });
+    }
+
+    function syncInputs() {
+      document.getElementById("bgColor1").value = state.bgColor1;
+      document.getElementById("bgColor2").value = state.bgColor2;
+      document.getElementById("bgGradientMode").value = state.bgGradientMode;
+      document.getElementById("accentColor").value = state.accentColor;
+      document.getElementById("badgeText").value = state.badgeText;
+      document.getElementById("mainTitle").value = state.mainTitle;
+      document.getElementById("fontSize").value = state.fontSize;
+      document.getElementById("subText").value = state.subText;
+      document.getElementById("imgShape").value = state.imgShape;
+      document.getElementById("imgScale").value = state.imgScale;
+      document.getElementById("imgX").value = state.imgX;
+      document.getElementById("imgY").value = state.imgY;
+
+      document.getElementById("fontSizeVal").textContent = state.fontSize;
+      document.getElementById("imgScaleVal").textContent = state.imgScale + "%";
+      document.getElementById("imgXVal").textContent = state.imgX;
+      document.getElementById("imgYVal").textContent = state.imgY;
+      document.getElementById("canvasInfo").textContent =
+        `${state.width} × ${state.height} px｜ドラッグで手持ち画像を移動できます`;
+
+      document.querySelectorAll("#themeButtons .pill-btn").forEach((b, i) => {
+        b.classList.toggle("active", THEMES[i].id === state.themeId);
+      });
+      document.querySelectorAll("#textStyleButtons .pill-btn").forEach((b, i) => {
+        b.classList.toggle("active", TEXT_STYLES[i].id === state.textStyleId);
+      });
+      document.querySelectorAll("#badgePosButtons .pill-btn").forEach((b, i) => {
+        b.classList.toggle("active", BADGE_POSITIONS[i].id === state.badgePos);
+      });
+      document.querySelectorAll("#layerStack .toggle-mini").forEach((btn) => {
+        const key = btn.dataset.layer;
+        const active = state.layers[key];
+        btn.textContent = active ? "表示中" : "非表示";
+        btn.classList.toggle("off", !active);
+      });
+    }
+
+    function drawRoundedRectPath(c, x, y, w, h, r) {
+      const radius = Math.min(r, w / 2, h / 2);
+      c.beginPath();
+      c.moveTo(x + radius, y);
+      c.arcTo(x + w, y, x + w, y + h, radius);
+      c.arcTo(x + w, y + h, x, y + h, radius);
+      c.arcTo(x, y + h, x, y, radius);
+      c.arcTo(x, y, x + w, y, radius);
+      c.closePath();
+    }
+
+    function renderBackground() {
+      const { width: w, height: h, bgColor1, bgColor2, bgGradientMode } = state;
+      if (bgGradientMode === "solid") {
+        ctx.fillStyle = bgColor1;
+      } else if (bgGradientMode === "vertical") {
+        const g = ctx.createLinearGradient(0, 0, 0, h);
+        g.addColorStop(0, bgColor1);
+        g.addColorStop(1, bgColor2);
+        ctx.fillStyle = g;
+      } else {
+        const g = ctx.createLinearGradient(0, 0, w, h);
+        g.addColorStop(0, bgColor1);
+        g.addColorStop(1, bgColor2);
+        ctx.fillStyle = g;
+      }
+      ctx.fillRect(0, 0, w, h);
+
+      // 控えめな装飾ライン
+      ctx.save();
+      ctx.strokeStyle = state.accentColor;
+      ctx.globalAlpha = 0.14;
+      ctx.lineWidth = Math.max(4, Math.round(w * 0.005));
+      ctx.strokeRect(w * 0.035, h * 0.055, w * 0.93, h * 0.89);
+      ctx.restore();
+    }
+
+    function renderImageLayer() {
+      if (!uploadedImg) return;
+      const { width: w, height: h, imgScale, imgX, imgY, imgShape } = state;
+      const scaleFactor = imgScale / 100;
+      const baseSize = Math.min(w, h) * 0.56;
+      const aspect = uploadedImg.width / uploadedImg.height || 1;
+      let drawW, drawH;
+
+      if (aspect >= 1) {
+        drawW = baseSize * scaleFactor;
+        drawH = drawW / aspect;
+      } else {
+        drawH = baseSize * scaleFactor;
+        drawW = drawH * aspect;
+      }
+
+      const cx = w / 2 + Number(imgX);
+      const cy = h / 2 + Number(imgY);
+      const x = cx - drawW / 2;
+      const y = cy - drawH / 2;
+
+      ctx.save();
+      if (imgShape === "circle") {
+        const r = Math.min(drawW, drawH) / 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+      } else if (imgShape === "rounded") {
+        drawRoundedRectPath(ctx, x, y, drawW, drawH, Math.min(drawW, drawH) * 0.12);
+        ctx.clip();
+      }
+      ctx.drawImage(uploadedImg, x, y, drawW, drawH);
+      ctx.restore();
+    }
+
+    function getFontSpec() {
+      const s = state.textStyleId;
+      const size = Number(state.fontSize);
+      if (s === "impact") {
+        return { family: '"Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif', weight: "900", size };
+      }
+      if (s === "modern") {
+        return { family: '"Helvetica Neue", Arial, "Hiragino Sans", sans-serif', weight: "600", size };
+      }
+      if (s === "pop") {
+        return { family: '"Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif', weight: "800", size };
+      }
+      if (s === "minimal") {
+        return { family: '"Hiragino Mincho ProN", "Yu Mincho", serif', weight: "600", size };
+      }
+      if (s === "highlight") {
+        return { family: '"Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif', weight: "800", size };
+      }
+      return { family: '"Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif', weight: "800", size };
+    }
+
+    function renderTextLayer() {
+      const { width: w, height: h, badgeText, badgePos, mainTitle, subText, accentColor, textColor, subColor, textStyleId } = state;
+      const padX = Math.round(w * 0.065);
+      const padY = Math.round(h * 0.085);
+
+      // 上部バッジ描画（3位置）
+      const cleanBadge = badgeText.trim();
+      if (cleanBadge) {
+        const badgeFontSize = Math.max(18, Math.round(Math.min(w, h) * 0.032));
+        ctx.save();
+        ctx.font = `800 ${badgeFontSize}px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
+        const textW = ctx.measureText(cleanBadge).width;
+        const boxW = textW + badgeFontSize * 1.5;
+        const boxH = badgeFontSize * 1.85;
+        let boxX = padX;
+
+        if (badgePos === "top-center") {
+          boxX = (w - boxW) / 2;
+        } else if (badgePos === "top-right") {
+          boxX = w - padX - boxW;
+        }
+        const boxY = padY;
+
+        ctx.fillStyle = accentColor;
+        drawRoundedRectPath(ctx, boxX, boxY, boxW, boxH, boxH / 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#090d16";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(cleanBadge, boxX + boxW / 2, boxY + boxH / 2 + 1);
+        ctx.restore();
+      }
+
+      // メインタイトル描画（6デザイン）
+      const lines = mainTitle.split("\n");
+      const spec = getFontSpec();
+      const lineHeight = spec.size * 1.28;
+      const totalTextH = lines.length * lineHeight;
+      const startY = (h - totalTextH) / 2 + lineHeight * 0.45;
+      const centerX = w / 2;
+
+      ctx.save();
+      ctx.font = `${spec.weight} ${spec.size}px ${spec.family}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      lines.forEach((line, idx) => {
+        const y = startY + idx * lineHeight;
+        if (!line) return;
+
+        if (textStyleId === "outline") {
+          ctx.lineJoin = "round";
+          ctx.lineWidth = Math.max(6, Math.round(spec.size * 0.14));
+          ctx.strokeStyle = "rgba(15, 23, 42, 0.88)";
+          ctx.strokeText(line, centerX, y);
+          ctx.fillStyle = textColor;
+          ctx.fillText(line, centerX, y);
+        } else if (textStyleId === "impact") {
+          ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
+          ctx.shadowBlur = 18;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 8;
+          ctx.fillStyle = textColor;
+          ctx.fillText(line, centerX, y);
+        } else if (textStyleId === "modern") {
+          ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+          ctx.shadowBlur = 8;
+          ctx.shadowOffsetY = 3;
+          ctx.fillStyle = textColor;
+          ctx.fillText(line, centerX, y);
+        } else if (textStyleId === "highlight") {
+          const metricsW = ctx.measureText(line).width;
+          const bandPadX = spec.size * 0.28;
+          const bandH = spec.size * 1.05;
+          ctx.save();
+          ctx.fillStyle = accentColor;
+          ctx.globalAlpha = 0.9;
+          drawRoundedRectPath(ctx, centerX - metricsW / 2 - bandPadX, y - bandH / 2, metricsW + bandPadX * 2, bandH, 8);
+          ctx.fill();
+          ctx.restore();
+          ctx.fillStyle = "#090d16";
+          ctx.fillText(line, centerX, y);
+        } else if (textStyleId === "pop") {
+          ctx.lineJoin = "round";
+          ctx.lineWidth = Math.max(6, Math.round(spec.size * 0.13));
+          ctx.strokeStyle = accentColor;
+          ctx.strokeText(line, centerX, y);
+          ctx.fillStyle = textColor;
+          ctx.fillText(line, centerX, y);
+        } else if (textStyleId === "minimal") {
+          ctx.fillStyle = textColor;
+          ctx.fillText(line, centerX, y);
+        }
+      });
+      ctx.restore();
+
+      // 下部サブ / クレジット
+      const cleanSub = subText.trim();
+      if (cleanSub) {
+        const subSize = Math.max(16, Math.round(Math.min(w, h) * 0.028));
+        ctx.save();
+        ctx.font = `600 ${subSize}px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
+        ctx.textAlign = "right";
+        ctx.textBaseline = "bottom";
+        ctx.fillStyle = subColor;
+        ctx.fillText(cleanSub, w - padX, h - padY * 0.75);
+        ctx.restore();
+      }
+    }
+
+    function render() {
+      canvas.width = state.width;
+      canvas.height = state.height;
+      ctx.clearRect(0, 0, state.width, state.height);
+
+      if (state.layers.bg) renderBackground();
+      if (state.layers.image) renderImageLayer();
+      if (state.layers.text) renderTextLayer();
+    }
+
+    function bindEvents() {
+      document.getElementById("sizePreset").addEventListener("change", (e) => {
+        const [w, h] = e.target.value.split("x").map(Number);
+        state.width = w;
+        state.height = h;
+        syncInputs();
+        render();
+      });
+
+      document.getElementById("bgColor1").addEventListener("input", (e) => {
+        state.bgColor1 = e.target.value;
+        state.themeId = "";
+        syncInputs();
+        render();
+      });
+
+      document.getElementById("bgColor2").addEventListener("input", (e) => {
+        state.bgColor2 = e.target.value;
+        state.themeId = "";
+        syncInputs();
+        render();
+      });
+
+      document.getElementById("bgGradientMode").addEventListener("change", (e) => {
+        state.bgGradientMode = e.target.value;
+        render();
+      });
+
+      document.getElementById("accentColor").addEventListener("input", (e) => {
+        state.accentColor = e.target.value;
+        render();
+      });
+
+      document.getElementById("badgeText").addEventListener("input", (e) => {
+        state.badgeText = e.target.value;
+        render();
+      });
+
+      document.getElementById("mainTitle").addEventListener("input", (e) => {
+        state.mainTitle = e.target.value;
+        render();
+      });
+
+      document.getElementById("fontSize").addEventListener("input", (e) => {
+        state.fontSize = Number(e.target.value);
+        syncInputs();
+        render();
+      });
+
+      document.getElementById("subText").addEventListener("input", (e) => {
+        state.subText = e.target.value;
+        render();
+      });
+
+      document.getElementById("imageUpload").addEventListener("change", (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            uploadedImg = img;
+            state.layers.image = true;
+            syncInputs();
+            render();
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      document.getElementById("btnClearImage").addEventListener("click", () => {
+        uploadedImg = null;
+        document.getElementById("imageUpload").value = "";
+        state.imgX = 0;
+        state.imgY = 0;
+        state.imgScale = 100;
+        syncInputs();
+        render();
+      });
+
+      document.getElementById("imgShape").addEventListener("change", (e) => {
+        state.imgShape = e.target.value;
+        render();
+      });
+
+      document.getElementById("imgScale").addEventListener("input", (e) => {
+        state.imgScale = Number(e.target.value);
+        syncInputs();
+        render();
+      });
+
+      document.getElementById("imgX").addEventListener("input", (e) => {
+        state.imgX = Number(e.target.value);
+        syncInputs();
+        render();
+      });
+
+      document.getElementById("imgY").addEventListener("input", (e) => {
+        state.imgY = Number(e.target.value);
+        syncInputs();
+        render();
+      });
+
+      document.querySelectorAll("#layerStack .toggle-mini").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const key = btn.dataset.layer;
+          state.layers[key] = !state.layers[key];
+          syncInputs();
+          render();
+        });
+      });
+
+      // キャンバス上でドラッグして手持ち画像を移動
+      function toCanvasCoords(clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        return {
+          x: (clientX - rect.left) * scaleX,
+          y: (clientY - rect.top) * scaleY
+        };
+      }
+
+      canvas.addEventListener("pointerdown", (e) => {
+        if (!uploadedImg || !state.layers.image) return;
+        isDraggingImg = true;
+        canvas.setPointerCapture(e.pointerId);
+        const pt = toCanvasCoords(e.clientX, e.clientY);
+        dragStart = { x: pt.x, y: pt.y, origX: state.imgX, origY: state.imgY };
+      });
+
+      canvas.addEventListener("pointermove", (e) => {
+        if (!isDraggingImg) return;
+        const pt = toCanvasCoords(e.clientX, e.clientY);
+        const nextX = Math.max(-500, Math.min(500, Math.round(dragStart.origX + (pt.x - dragStart.x))));
+        const nextY = Math.max(-500, Math.min(500, Math.round(dragStart.origY + (pt.y - dragStart.y))));
+        state.imgX = nextX;
+        state.imgY = nextY;
+        syncInputs();
+        render();
+      });
+
+      canvas.addEventListener("pointerup", () => {
+        isDraggingImg = false;
+      });
+
+      document.getElementById("btnDownload").addEventListener("click", () => {
+        const link = document.createElement("a");
+        link.download = `eyecatch-v2-${state.width}x${state.height}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      });
+
+      document.getElementById("btnReset").addEventListener("click", () => {
+        state.width = 1280;
+        state.height = 670;
+        state.themeId = "tech";
+        state.bgColor1 = "#0f172a";
+        state.bgColor2 = "#1d4ed8";
+        state.bgGradientMode = "diagonal";
+        state.accentColor = "#38bdf8";
+        state.textColor = "#ffffff";
+        state.subColor = "#cbd5e1";
+        state.textStyleId = "outline";
+        state.badgePos = "top-left";
+        state.badgeText = "Ver.2.0 拡張版";
+        state.mainTitle = "レイヤー重ね＆6種デザインで\nアイキャッチを自在に作る";
+        state.fontSize = 64;
+        state.subText = "Eyecatch Maker Ver.2.0";
+        state.imgShape = "none";
+        state.imgScale = 100;
+        state.imgX = 0;
+        state.imgY = 0;
+        state.layers = { bg: true, image: true, text: true };
+        document.getElementById("sizePreset").value = "1280x670";
+        syncInputs();
+        render();
+      });
+    }
+
+    initButtons();
+    bindEvents();
+    syncInputs();
+    render();
+  </script>
+</body>
+</html>
